@@ -1,43 +1,57 @@
-# Simple workflow for deploying static content to GitHub Pages
-name: Deploy static content to Pages
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Submit to Google Sheets</title>
+</head>
+<body>
+  <h2>Contact Form</h2>
+  <form id="myForm">
+    <label>Name:</label><br />
+    <input type="text" name="name" required /><br /><br />
+    
+    <label>Email:</label><br />
+    <input type="email" name="email" required /><br /><br />
+    
+    <label>Message:</label><br />
+    <textarea name="message" required></textarea><br /><br />
+    
+    <button type="submit">Submit</button>
+  </form>
 
-on:
-  # Runs on pushes targeting the default branch
-  push:
-    branches: ["main"]
+  <p id="status"></p>
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
+  <script>
+    const form = document.getElementById('myForm');
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+      const formData = new FormData(form);
+      const data = {};
+      formData.forEach((value, key) => data[key] = value);
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+      fetch('https://script.google.com/macros/s/AKfycbwBbWTwxZOjO_RjvThHg4YiOM0Vs50VBwpybux5fbgNaIiWyxQeaEjiMEPJUnJucZ8fFA/exec', {
+  method: 'POST',
+  body: JSON.stringify(data),
+  headers: {
+    'Content-Type': 'application/json'
+  }
+})
+.then(async (res) => {
+  const response = await res.json();
+  console.log("Response from server:", response);
+  if (response.result === "Success") {
+    document.getElementById('status').innerText = "Submitted successfully!";
+    form.reset();
+  } else {
+    document.getElementById('status').innerText = "Submission failed: " + response.message;
+  }
+})
+.catch(err => {
+  document.getElementById('status').innerText = "Error submitting form.";
+  console.error("Fetch error:", err);
+});
 
-jobs:
-  # Single deploy job since we're just deploying
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          # Upload entire repository
-          path: '.'
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+    });
+  </script>
+</body>
+</html>
